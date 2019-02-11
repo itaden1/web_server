@@ -5,6 +5,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <unistd.h>
 
 int main(int argc, char *argv[])
 {
@@ -14,45 +15,42 @@ int main(int argc, char *argv[])
 
     if (argc != 2)
     {
-        fprintf(stderr, "usage: showip hostname\n");
+        fprintf(stderr, "usage: PORT\n");
         return 1;
     }
 
     memset(&hints, 0, sizeof(hints));     // Remove garbage values by setting all hint values to 0
-    hints.ai_family = AF_UNSPEC;          // UNspecified, dont care if IPV4 or IPV6
+    hints.ai_family = AF_UNSPEC;          // Unspecified, dont care if IPV4 or IPV6
     hints.ai_socktype = SOCK_STREAM;      // TCP stream socket
+    hints.ai_flags = AI_PASSIVE;          // Use local ie. am a server
 
-    if ((status = getaddrinfo(argv[1], NULL, &hints, &res)) != 0)
+    printf("argv == %s\n", argv[1]);
+
+    status = getaddrinfo(NULL, argv[1], &hints, &res);
+    if (status != 0)
     {
-        fprintf(stderr, "getaddressinfo: %s\n", gai_strerror(status));
+        fprintf(stderr, "getaddessinfo: %s\n", gai_strerror(status));
     }
 
-    printf("IP address for : %s\n\n", argv[1]);
-
-    // iterate through the constructed socket info
-    for (p = res; p != NULL; p = p->ai_next)
+    for (p = res; p != NULL; p = p->ai_next)                                    // iterate through the constructed socket info until we find one we can bind to
     {
-        void *addr;
-        char *ipver;
-
-        if (p->ai_family == AF_INET)
+        int sfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);         // Create a socket file descriptor
+        if (sfd == -1)                                                          // If socket binding fails go to next address
         {
-            struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
-            addr = &(ipv4->sin_addr);
-            ipver = "IPv4";
+            continue;
         }
-        else
+        if (bind(sfd, p->ai_addr, p->ai_addrlen))                               // Bind the socket to an address
         {
-            struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)p->ai_addr;
-            addr = &(ipv6->sin6_addr);
-            ipver = "IPv6";
+            printf("bound to socket at %s\n", p->ai_addr->sa_data);
+            close(sfd);
+            break;
         }
-
-        // translate IP address info to printable format
-        inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
-        printf("%s: %s\n", ipver, ipstr);
-
     }
+    if (p == NULL)
+    {
+        fprintf(stderr, "Failed to bind to a socket..\n");
+    }
+
 
     freeaddrinfo(res);
     return 0;
