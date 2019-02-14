@@ -8,19 +8,19 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#define BUFF_SIZE 500
+#define BUFF_SIZE 5000
 #define BACKLOG 10
 
 int main(int argc, char *argv[])
 {
-    int sfd, nsfd;                      // Int for describing a Socket File Descriptor
-    char buf[BUFF_SIZE];                // Buffer for reading incoming messages of size BUFF_SIZE
-    int status;                         // int to store status returned by getaddrinfo
-    struct sockaddr my_addr, peer_addr; // For storing conected peer address
-    socklen_t peer_addr_len, my_addr_len;            // For storing length of connected peer address
-    ssize_t nread;                      // For storing incoming messages for reading
-    struct addrinfo hints, *res, *p;    // Struct to store addrinfo
-    char peerip[INET6_ADDRSTRLEN];       // for holding ip addresses returned by inet_ntop
+    int sfd, nsfd;                                  // Int for describing a Socket File Descriptor
+    char buf[BUFF_SIZE];                            // Buffer for reading incoming messages of size BUFF_SIZE
+    int status;                                     // int to store status returned by getaddrinfo
+    struct sockaddr my_addr, peer_addr;             // For storing conected peer address
+    socklen_t peer_addr_len, my_addr_len;           // For storing length of connected peer address
+    ssize_t nread;                                  // For storing incoming messages for reading
+    struct addrinfo hints, *res, *p;                // Struct to store addrinfo
+    char peerip[INET6_ADDRSTRLEN];                  // for holding ip addresses returned by inet_ntop
     char myip[INET6_ADDRSTRLEN];
 
     if (argc != 2)
@@ -30,6 +30,7 @@ int main(int argc, char *argv[])
     }
 
     memset(&hints, 0, sizeof(hints));     // Remove garbage values by setting all hint values to 0
+    memset(&buf, 0, BUFF_SIZE);
     hints.ai_family = AF_UNSPEC;          // Unspecified, dont care if IPV4 or IPV6
     hints.ai_socktype = SOCK_STREAM;      // TCP stream socket
     hints.ai_flags = AI_PASSIVE;          // Use local ip. am a server
@@ -71,7 +72,9 @@ int main(int argc, char *argv[])
 
     while(1)
     {
-        nsfd = accept(sfd, &peer_addr, &peer_addr_len);     // Accept a connection and create addrinfo for the client
+
+
+        nsfd = accept(sfd, &peer_addr, &peer_addr_len);                         // Accept a connection and create addrinfo for the client
         if (nsfd == -1)
         {
             perror("accept");
@@ -79,6 +82,20 @@ int main(int argc, char *argv[])
         }
         inet_ntop(peer_addr.sa_family, &peer_addr, peerip, peer_addr_len);       // get addrinfo of client and transform from binary to character string
         printf("server: recieved connection from %s\n", peerip);
+
+        nread = read(nsfd, &buf, BUFF_SIZE);
+        printf("%zd bytes read:\n%s\n", nread, buf);
+
+
+        char delim[2] = "/";
+        char *method = strtok(buf, delim);
+
+        char *start_path = strchr(buf, '/');
+        char *start_prot;
+        
+
+        printf("method: %s\npath: %s\n", method, start_path);
+
     }
 
 
