@@ -73,7 +73,6 @@ int main(int argc, char *argv[])
     while(1)
     {
 
-
         nsfd = accept(sfd, &peer_addr, &peer_addr_len);                         // Accept a connection and create addrinfo for the client
         if (nsfd == -1)
         {
@@ -87,17 +86,19 @@ int main(int argc, char *argv[])
         printf("%zd bytes read:\n%s\n", nread, buf);
 
 
-        char delim[2] = "/";
-        char *method = strtok(buf, delim);
+        char delim[2] = " ";                    // assuming http header contains a space between method, path, and protocol
+        char* buf_tmp = malloc(sizeof(buf));
+        strcpy(buf_tmp, buf);
+        char *method = strtok(buf_tmp, delim);
+        char *start_path = strchr(buf, '/') - 1;
 
-        char *start_path = strchr(buf, '/');
-        char *start_prot;
+        char *path = strchr(buf, '/');
         
 
-        printf("method: %s\npath: %s\n", method, start_path);
+        printf("method: %s\npath: %s\n", method, path);
+        free(buf_tmp);
 
     }
-
 
     return 0;
 }
