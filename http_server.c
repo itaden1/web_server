@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #define BUFF_SIZE 5000
 #define BACKLOG 10
@@ -22,6 +23,9 @@ int main(int argc, char *argv[])
     struct addrinfo hints, *res, *p;                // Struct to store addrinfo
     char peerip[INET6_ADDRSTRLEN];                  // for holding ip addresses returned by inet_ntop
     char myip[INET6_ADDRSTRLEN];
+
+    char *wwwdir = "./www";
+    FILE *html;
 
     if (argc != 2)
     {
@@ -86,16 +90,38 @@ int main(int argc, char *argv[])
         printf("%zd bytes read:\n%s\n", nread, buf);
 
 
-        char delim[2] = " ";                    // assuming http header contains a space between method, path, and protocol
-        char* buf_tmp = malloc(sizeof(buf));
+        char delim[2] = " ";                                                    // assuming http header contains a space between method, path, and protocol
+        char *buf_tmp = malloc(sizeof(buf));
+        char response_buf[10000];
         strcpy(buf_tmp, buf);
-        char *method = strtok(buf_tmp, delim);
-        char *start_path = strchr(buf, '/') - 1;
+        char *method = strtok(buf_tmp, " ");
+        char *path = strtok(NULL, " ");
+        char *protocol = strtok(NULL, "\n");
 
-        char *path = strchr(buf, '/');
+        size_t nbytes;
         
-
-        printf("method: %s\npath: %s\n", method, path);
+        if (strcmp(path, "/") == 0)
+        {
+            char fpath[strlen(wwwdir) + strlen(path) + strlen("index.html") + 1];
+            memset(fpath, '\0', sizeof(fpath) );
+            strcpy(fpath, wwwdir);
+            strcat(fpath, path);
+            strcpy(fpath, "index.html");
+            html = fopen(fpath, "rb");
+            while ((nbytes = fread(response_buf, 1, sizeof(response_buf) + 1, html)) > 0)
+            {
+                printf("Woop de doo\n");
+            }
+            fclose(html);
+        }
+        else
+        {
+            char fpath[strlen(wwwdir) + strlen(path) + 1];
+            memset(fpath, '\0', sizeof(fpath) );
+            strcpy(fpath, wwwdir);
+            strcat(fpath, path);
+            
+        }
         free(buf_tmp);
 
     }
